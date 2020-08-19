@@ -79,6 +79,8 @@ def main():
                         help='Keep 30-second preview tracks')
     parser.add_argument('-v', '--version', action='store_true', default=False,
                         help='Display the current version of SoundScrape')
+    parser.add_argument('-limit', '--length_limit', type=float, default=sys.maxsize,
+                        help='Max duration of tracks to download')
 
     args = parser.parse_args()
     vargs = vars(args)
@@ -290,7 +292,7 @@ def process_soundcloud(vargs):
                                 filenames.append(filename)
 
         if not aggressive:
-            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], vargs['path'],
+            filenames = download_tracks(client, tracks, num_tracks, vargs['downloadable'], vargs['folders'], vargs['path'], vargs['length_limit'],
                                         id3_extras=id3_extras)
 
     if vargs['open']:
@@ -365,7 +367,7 @@ def download_track(track, album_name=u'', keep_previews=False, folders=False, fi
 
     return filename
 
-def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='', id3_extras={}):
+def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, folders=False, custom_path='', length_limit = sys.maxsize, id3_extras={}):
     """
     Given a list of tracks, iteratively download all of them.
 
@@ -374,6 +376,10 @@ def download_tracks(client, tracks, num_tracks=sys.maxsize, downloadable=False, 
     filenames = []
 
     for i, track in enumerate(tracks):
+        intleng = track.duration
+        if intleng > (length_limit*60000):
+            puts_safe("Track over user set length limit, skipping")
+            continue
 
         # "Track" and "Resource" objects are actually different,
         # even though they're the same.
